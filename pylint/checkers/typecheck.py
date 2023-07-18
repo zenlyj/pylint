@@ -40,6 +40,7 @@ from pylint.checkers.utils import (
     is_none,
     is_overload_stub,
     is_postponed_evaluation_enabled,
+    is_short_circuited,
     is_super,
     node_ignores_exception,
     only_required_for_messages,
@@ -2079,6 +2080,8 @@ accessed. Python regular expressions are accepted.",
         if is_inside_abstract_class(node):
             return
         if is_comprehension(node):
+            return
+        if is_short_circuited(node):
             return
         inferred = safe_infer(node)
         if inferred is None or isinstance(inferred, util.UninferableBase):

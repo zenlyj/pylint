@@ -2246,3 +2246,18 @@ def clear_lru_caches() -> None:
     ]
     for lru in caches_holding_node_references:
         lru.cache_clear()
+
+def is_short_circuited(node: nodes.NodeNG) -> bool:
+    bool_op = get_node_first_ancestor_of_type(node, nodes.BoolOp)
+    while bool_op:
+        for op_val in bool_op.values:
+            if op_val.parent_of(node):
+                break
+            inferred = safe_infer(op_val)
+            infer_val = isinstance(inferred, nodes.Const) and inferred.value
+            if bool_op.op == 'or' and infer_val:
+                return True
+            if bool_op.op == 'and' and not infer_val:
+                return True
+        bool_op = get_node_first_ancestor_of_type(bool_op, nodes.BoolOp)
+    return False
