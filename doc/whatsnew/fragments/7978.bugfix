@@ -1,0 +1,4 @@
+Fix ``unsupported-membership-test`` false positive when membership test is short circuited
+in boolean operation.
+
+Closes #7978
