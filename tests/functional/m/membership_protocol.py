@@ -1,4 +1,4 @@
-# pylint: disable=missing-docstring,pointless-statement,expression-not-assigned,too-few-public-methods,import-error,wrong-import-position,no-else-return, comparison-with-itself, redundant-u-string-prefix comparison-of-constants
+# pylint: disable=missing-docstring,pointless-statement,expression-not-assigned,too-few-public-methods,import-error,wrong-import-position,no-else-return, comparison-with-itself, redundant-u-string-prefix comparison-of-constants, wrong-import-order
 
 # standard types
 1 in [1, 2, 3]
@@ -121,3 +121,29 @@ class EmptyClass:
 42 in EmptyClass  # [unsupported-membership-test]
 42 not in count  # [unsupported-membership-test]
 42 in range  # [unsupported-membership-test]
+
+from typing import Optional, TypedDict
+
+class ADict(TypedDict):
+    a: int
+
+x: Optional[ADict] = None
+
+# unsupported-membership-test short circuited by OR
+while (x is None) or ('a' in x):
+    print('test')
+    # `x` gets assigned in the loop.
+if (x is not None) or ((x is not None) or (x is None) or ('a' in x)):
+    pass
+
+# unsupported-membership-test short circuited by AND
+if (x is not None) and ('a' in x):
+    pass
+if (x is None) and ((x is None) and (x is not None) and ('a' in x)):
+    pass
+
+# unsupported-membership-test no short circuit
+if (x is None) and ('a' in x) or (x is None):  # [unsupported-membership-test]
+    pass
+if (x is None) and ((x is not None) or ('a' in x) or (x is None)):  # [unsupported-membership-test]
+    pass
