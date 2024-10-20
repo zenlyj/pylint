@@ -1890,7 +1890,7 @@ class VariablesChecker(BaseChecker):
                             stmt, nodes.FunctionDef
                         )
                     )
-                    and not node.name in self._nonlocal_names
+                    and node.name not in self._nonlocal_names
                 ):
                     self.add_message(
                         "used-before-assignment",
