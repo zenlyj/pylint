@@ -256,7 +256,7 @@ def outer_():
     def inner_try():
         try:
             nonlocal a
-            print(a)  # [used-before-assignment] FALSE POSITIVE
+            print(a)
             a = 2
             print(a)
         except:
@@ -267,7 +267,7 @@ def outer_():
         while i < 2:
             i += 1
             nonlocal a
-            print(a)  # [used-before-assignment] FALSE POSITIVE
+            print(a)
             a = 2
             print(a)
 

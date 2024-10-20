@@ -723,7 +723,7 @@ scope_type : {self.scope_type}
                 name = other_node.name
             elif isinstance(other_node, (nodes.Import, nodes.ImportFrom)):
                 name = node.name
-            elif isinstance(other_node, nodes.ClassDef):
+            elif isinstance(other_node, (nodes.FunctionDef, nodes.ClassDef)):
                 name = other_node.name
             else:
                 continue
@@ -1268,6 +1268,7 @@ class VariablesChecker(BaseChecker):
         self._reported_type_checking_usage_scopes: dict[
             str, list[nodes.LocalsDictNodeNG]
         ] = {}
+        self._nonlocal_names: set[str] = set()
         self._postponed_evaluation_enabled = False
 
     @utils.only_required_for_messages(
@@ -1434,6 +1435,9 @@ class VariablesChecker(BaseChecker):
     def visit_functiondef(self, node: nodes.FunctionDef) -> None:
         """Visit function: update consumption analysis variable and check locals."""
         self._to_consume.append(NamesConsumer(node, "function"))
+        self._nonlocal_names.update(
+            _flattened_scope_names(node.nodes_of_class(nodes.Nonlocal))
+        )
         if not (
             self.linter.is_message_enabled("redefined-outer-name")
             or self.linter.is_message_enabled("redefined-builtin")
@@ -1483,6 +1487,7 @@ class VariablesChecker(BaseChecker):
     def leave_functiondef(self, node: nodes.FunctionDef) -> None:
         """Leave function: check function's locals are consumed."""
         self._check_metaclasses(node)
+        self._nonlocal_names = set()
 
         if node.type_comment_returns:
             self._store_type_annotation_node(node.type_comment_returns)
@@ -1874,12 +1879,18 @@ class VariablesChecker(BaseChecker):
 
                 # Skip postponed evaluation of annotations
                 # and unevaluated annotations inside a function body
-                if not (
-                    self._postponed_evaluation_enabled
-                    and isinstance(stmt, (nodes.AnnAssign, nodes.FunctionDef))
-                ) and not (
-                    isinstance(stmt, nodes.AnnAssign)
-                    and utils.get_node_first_ancestor_of_type(stmt, nodes.FunctionDef)
+                if (
+                    not (
+                        self._postponed_evaluation_enabled
+                        and isinstance(stmt, (nodes.AnnAssign, nodes.FunctionDef))
+                    )
+                    and not (
+                        isinstance(stmt, nodes.AnnAssign)
+                        and utils.get_node_first_ancestor_of_type(
+                            stmt, nodes.FunctionDef
+                        )
+                    )
+                    and not node.name in self._nonlocal_names
                 ):
                     self.add_message(
                         "used-before-assignment",
@@ -1963,6 +1974,8 @@ class VariablesChecker(BaseChecker):
             node.name in self._reported_type_checking_usage_scopes
             and node.scope() in self._reported_type_checking_usage_scopes[node.name]
         ):
+            return False
+        if node.name in self._nonlocal_names:
             return False
 
         confidence = HIGH
