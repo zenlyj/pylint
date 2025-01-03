@@ -329,7 +329,6 @@ class ComparisonChecker(_BasicChecker):
         self,
         node: nodes.Compare,
         left: nodes.NodeNG,
-        operator: str,
         right: nodes.NodeNG,
     ) -> None:
         """Check for expressions like type(x) == Y."""
@@ -339,7 +338,7 @@ class ComparisonChecker(_BasicChecker):
         ):
             return
 
-        if operator in {"is", "is not"} and _is_one_arg_pos_call(right):
+        if _is_one_arg_pos_call(right):
             right_func = utils.safe_infer(right.func)
             if (
                 isinstance(right_func, nodes.ClassDef)
